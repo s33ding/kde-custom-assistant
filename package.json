@@ -1,0 +1,25 @@
+{
+  "name": "kde-custom-assistant",
+  "version": "0.1.0",
+  "description": "An embeddable AI assistant that opens as a chat widget in any web page.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "widget",
+    "chatbot",
+    "embeddable"
+  ],
+  "author": "s33ding",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "2.8.5",
+    "dotenv": "16.4.7",
+    "express": "4.21.2"
+  }
+}
