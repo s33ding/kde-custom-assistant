@@ -12,3 +12,4 @@ SmoothDialogue/.env
 SmoothDialogue/certs/
 SmoothDialogue/**/__pycache__/
 SmoothDialogue/**/*.pyc
+certs/

@@ -1,5 +1,13 @@
-# Reverse proxy so Sidekick is reachable at http://s33ding.com/ (no port).
-# Listens on :80 and forwards to the assistant container on 58829.
-:80 {
+# Reverse proxy for Sidekick.
+# Uses mkcert-generated certs (CA trusted by system + browsers) so HTTPS works
+# without warnings. HTTPS is required for microphone access (voice mode).
+
+s33ding.com, localhost {
+	tls /etc/caddy/certs/s33ding.crt /etc/caddy/certs/s33ding.key
 	reverse_proxy assistant:58829
+}
+
+# Plain HTTP on :80 → redirect to HTTPS
+:80 {
+	redir https://s33ding.com{uri} permanent
 }

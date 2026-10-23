@@ -17,6 +17,8 @@ services:
       - ./server:/app/server:z
       - ./public:/app/public:z
       - /app/node_modules
+      # Latest screenshot source for the Txt Extract tab (read-only)
+      - ${SCREENSHOTS_DIR:-${HOME}/Pictures/Screenshots}:/screenshots:ro,z
     # Install nodemon into the node_modules volume (image omits dev deps), then
     # run with polling-based watch.
     command: ["sh", "-c", "npm install --no-save nodemon@3.1.9 && npx nodemon --legacy-watch --watch server --ext js,json server/index.js"]
@@ -24,11 +26,16 @@ services:
       PORT: 58829
       # Polling interval for nodemon (ms)
       CHOKIDAR_USEPOLLING: "true"
+      SCREENSHOTS_DIR: /screenshots
       AI_PROVIDER: ${AI_PROVIDER:-mock}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       SYSTEM_PROMPT: ${SYSTEM_PROMPT:-You are a helpful assistant embedded in a web page.}
+      # Forward /api/improve to the SmoothDialogue (Flask + Bedrock) service
+      SMOOTH_API_URL: ${SMOOTH_API_URL:-http://smooth:5000/}
+    depends_on:
+      - smooth
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:58829/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -36,15 +43,45 @@ services:
       retries: 3
       start_period: 40s
 
-  # Reverse proxy: exposes Sidekick on port 80 so you can use
-  # http://s33ding.com/ without the :58829 port.
+  # Reverse proxy: serves Sidekick on http://s33ding.com/ (80, redirects) and
+  # https://s33ding.com/ (443, internal CA — required for mic/voice access).
   proxy:
     image: caddy:2-alpine
     container_name: sidekick-proxy
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:z
+      - ./certs:/etc/caddy/certs:ro,z
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - assistant
+
+  # SmoothDialogue: Flask app that rewrites text via AWS Bedrock (Claude Haiku).
+  # Uses the host's AWS credentials (profile `iesb`), mounted read-only.
+  smooth:
+    build:
+      context: ./SmoothDialogue/app
+    image: smoothdialogue:latest
+    container_name: smoothdialogue
+    restart: always
+    expose:
+      - "5000"
+    environment:
+      # AWS credentials for Bedrock, injected from the host's `iesb` profile via
+      # .env (see scripts/aws-env.sh). No ~/.aws mount — avoids SELinux relabel.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-supersecretkey}
+      HOST: 0.0.0.0
+      PORT: 5000
+
+volumes:
+  caddy_data:
+  caddy_config:
