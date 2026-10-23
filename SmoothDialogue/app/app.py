@@ -1,18 +1,20 @@
 from flask import Flask, request, render_template, jsonify, session
 import boto3
 import json
-import os
+
+from config import Config
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
+app.config.from_object(Config)
+app.secret_key = Config.SECRET_KEY
 
 # Bedrock client using iesb profile credentials (mounted via volume)
 bedrock = boto3.client(
     "bedrock-runtime",
-    region_name=os.getenv("AWS_REGION", "us-east-1"),
+    region_name=Config.AWS_REGION,
 )
 
-MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+MODEL_ID = Config.BEDROCK_MODEL_ID
 
 # Função para melhorar a comunicação escrita
 def improve_communication(text):
@@ -74,4 +76,4 @@ def greet():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)

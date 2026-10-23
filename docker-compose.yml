@@ -35,3 +35,16 @@ services:
       timeout: 3s
       retries: 3
       start_period: 40s
+
+  # Reverse proxy: exposes Sidekick on port 80 so you can use
+  # http://s33ding.com/ without the :58829 port.
+  proxy:
+    image: caddy:2-alpine
+    container_name: sidekick-proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:z
+    depends_on:
+      - assistant

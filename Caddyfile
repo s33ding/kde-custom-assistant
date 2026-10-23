@@ -1,0 +1,5 @@
+# Reverse proxy so Sidekick is reachable at http://s33ding.com/ (no port).
+# Listens on :80 and forwards to the assistant container on 58829.
+:80 {
+	reverse_proxy assistant:58829
+}
