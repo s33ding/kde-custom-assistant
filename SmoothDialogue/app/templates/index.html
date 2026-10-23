@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmoothDialogue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">💬</span>
+                <h1>Smooth<span class="highlight">Dialogue</span></h1>
+            </div>
+            <p class="tagline">Comunique-se com clareza, profissionalismo e empatia</p>
+        </header>
+
+        <main class="container">
+            <div class="panels">
+                <div class="panel panel-input">
+                    <div class="panel-header">
+                        <span class="panel-icon">✏️</span>
+                        <h2>Texto Original</h2>
+                    </div>
+                    <textarea id="userInput" placeholder="Digite sua mensagem aqui...&#10;&#10;Ex: oi pessoal preciso do relatorio ate amanha"></textarea>
+                </div>
+
+                <div class="panel panel-output">
+                    <div class="panel-header">
+                        <span class="panel-icon">✨</span>
+                        <h2>Texto Melhorado</h2>
+                    </div>
+                    <div id="response" class="output-box">
+                        <span class="placeholder-text">O texto aprimorado aparecerá aqui...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button onclick="improveCommunication()" id="submitButton">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Melhorar Comunicação</span>
+                </button>
+                <button class="btn-copy" id="copyButton" onclick="copyToClipboard()">
+                    <span class="btn-icon">📋</span>
+                    <span class="btn-text">Copiar</span>
+                </button>
+            </div>
+
+            <div id="loading">
+                <div class="spinner"></div>
+                <span>Aprimorando sua mensagem...</span>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by <strong>AWS Bedrock</strong> · Claude AI</p>
+        </footer>
+    </div>
+
+    <script>
+        function improveCommunication() {
+            const inputText = document.getElementById("userInput").value;
+            const responseBox = document.getElementById("response");
+            const loadingBox = document.getElementById("loading");
+            const copyButton = document.getElementById("copyButton");
+            const submitButton = document.getElementById("submitButton");
+
+            if (inputText.trim() === "") {
+                responseBox.innerHTML = '<span class="error">Por favor, insira uma mensagem!</span>';
+                return;
+            }
+
+            responseBox.innerHTML = "";
+            loadingBox.classList.add("visible");
+            submitButton.disabled = true;
+            copyButton.classList.remove("visible");
+
+            fetch("/", {
+                method: "POST",
+                headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                body: `text=${encodeURIComponent(inputText)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingBox.classList.remove("visible");
+                submitButton.disabled = false;
+                responseBox.innerHTML = formatText(data.corrected_text);
+                copyButton.classList.add("visible");
+            })
+            .catch(() => {
+                loadingBox.classList.remove("visible");
+                submitButton.disabled = false;
+                responseBox.innerHTML = '<span class="error">Ocorreu um erro! Tente novamente.</span>';
+            });
+        }
+
+        function formatText(text) {
+            // Basic markdown-like formatting
+            return text
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\"(.*?)\"/g, '<q>$1</q>');
+        }
+
+        function copyToClipboard() {
+            const responseBox = document.getElementById("response");
+            navigator.clipboard.writeText(responseBox.innerText).then(() => {
+                const copyBtn = document.getElementById("copyButton");
+                copyBtn.querySelector('.btn-text').textContent = "Copiado! ✓";
+                setTimeout(() => {
+                    copyBtn.querySelector('.btn-text').textContent = "Copiar";
+                }, 2000);
+            });
+        }
+
+        // Allow Ctrl+Enter to submit
+        document.getElementById("userInput").addEventListener("keydown", function(e) {
+            if (e.ctrlKey && e.key === "Enter") {
+                improveCommunication();
+            }
+        });
+    </script>
+</body>
+</html>

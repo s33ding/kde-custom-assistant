@@ -126,11 +126,32 @@ sidekick-ai/
 │   └── widget.js    # self-contained embeddable widget
 ├── server/
 │   └── index.js     # Express proxy + provider logic
+├── SmoothDialogue/  # companion subproject (see below)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
 └── package.json
 ```
+
+## 🤝 Companion: SmoothDialogue
+
+Bundled under [`SmoothDialogue/`](./SmoothDialogue) is a companion app that
+rewrites informal Portuguese messages into clear, professional, and empathetic
+communication, powered by **AWS Bedrock** (Claude Haiku).
+
+| | Sidekick | SmoothDialogue |
+|---|---|---|
+| Role | Embeddable chat widget | Text-improvement web app |
+| Stack | Node / Express | Python / Flask + Nginx |
+| AI | OpenAI / mock | AWS Bedrock (Claude) |
+| Port | `58829` | `443` (HTTPS via Nginx) |
+
+It runs independently — see
+[`SmoothDialogue/README.md`](./SmoothDialogue/README.md) for its setup (SSL
+certs, `.env`, and `docker compose up`). Its secrets (`.env`) and local certs
+(`certs/`) are gitignored and are **not** tracked here.
+
+> Source: https://github.com/s33ding/SmoothDialogue
 
 ## 📜 License
 
