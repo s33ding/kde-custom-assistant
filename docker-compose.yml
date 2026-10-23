@@ -1,8 +1,8 @@
 services:
   assistant:
     build: .
-    image: kde-custom-assistant:latest
-    container_name: kde-custom-assistant
+    image: sidekick-ai:latest
+    container_name: sidekick-ai
     # Always-on: restart on crash and on host/daemon reboot
     restart: always
     ports:

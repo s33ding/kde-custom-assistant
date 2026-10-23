@@ -1,7 +1,7 @@
 {
-  "name": "kde-custom-assistant",
+  "name": "sidekick-ai",
   "version": "0.1.0",
-  "description": "An embeddable AI assistant that opens as a chat widget in any web page.",
+  "description": "Sidekick — an embeddable AI assistant that opens as a chat widget in any web page.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {

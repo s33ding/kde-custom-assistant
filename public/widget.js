@@ -1,9 +1,9 @@
 /**
- * kde-custom-assistant widget
+ * Sidekick widget
  * Embed with:
  *   <script src="http://localhost:58829/widget.js"
  *           data-api="http://localhost:58829/api/chat"
- *           data-title="Assistant"></script>
+ *           data-title="Sidekick"></script>
  */
 (function () {
   "use strict";
@@ -14,7 +14,7 @@
     "/api/chat";
   const TITLE =
     (currentScript && currentScript.getAttribute("data-title")) ||
-    "AI Assistant";
+    "Sidekick";
 
   const messages = []; // {role, content}
 
@@ -157,5 +157,5 @@
   }
 
   // greeting
-  addMessage("assistant", "Hi! 👋 How can I help you today?");
+  addMessage("assistant", "Hey! 👋 I'm Sidekick. How can I help?");
 })();

@@ -90,7 +90,7 @@ app.post("/api/chat", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`kde-custom-assistant running on http://localhost:${PORT}`);
+  console.log(`Sidekick running on http://localhost:${PORT}`);
   console.log(`  provider: ${AI_PROVIDER}`);
   console.log(`  demo:     http://localhost:${PORT}/`);
 });
