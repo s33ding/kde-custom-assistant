@@ -127,13 +127,13 @@
     </header>
 
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="assistant">Assistant</button>
-      <button class="tab-btn" data-tab="smooth">SmoothDialogue</button>
+      <button class="tab-btn" data-tab="assistant" style="display:none;">Assistant</button>
+      <button class="tab-btn active" data-tab="smooth">SmoothDialogue</button>
       <button class="tab-btn" data-tab="extract">Txt Extract</button>
     </nav>
 
-    <!-- Tab: Assistant -->
-    <section class="tab-panel active" id="tab-assistant">
+    <!-- Tab: Assistant (disabled for now — kept in code) -->
+    <section class="tab-panel" id="tab-assistant">
       <div class="container chat-container">
         <div class="chat-top">
           <button class="primary" id="convoBtn">Conversar</button>
@@ -150,7 +150,7 @@
     </section>
 
     <!-- Tab: SmoothDialogue (rewrite) -->
-    <section class="tab-panel" id="tab-smooth">
+    <section class="tab-panel active" id="tab-smooth">
       <div class="container">
         <div class="panels">
           <div class="panel">
@@ -167,7 +167,7 @@
           <button class="copy" id="smoothCopy">Copiar</button>
         </div>
         <div id="smoothLoading" class="loader"><div class="spinner"></div><span>Aprimorando...</span></div>
-        <div class="hints"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> melhorar · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copiar · <kbd>Alt</kbd>+<kbd>1/2/3</kbd> trocar aba</div>
+        <div class="hints"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> melhorar · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copiar · <kbd>Alt</kbd>+<kbd>1/2</kbd> trocar aba</div>
       </div>
     </section>
 
@@ -193,7 +193,7 @@
           <button class="copy" id="ocrCopy">Copiar</button>
         </div>
         <div id="ocrLoading" class="loader"><div class="spinner"></div><span>Extraindo...</span></div>
-        <div class="hints"><kbd>Ctrl</kbd>+<kbd>V</kbd> colar · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> extrair · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copiar · <kbd>Alt</kbd>+<kbd>1/2/3</kbd> trocar aba</div>
+        <div class="hints"><kbd>Ctrl</kbd>+<kbd>V</kbd> colar · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> extrair · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copiar · <kbd>Alt</kbd>+<kbd>1/2</kbd> trocar aba</div>
       </div>
     </section>
 
@@ -291,11 +291,10 @@
     function activeTab(){const b=document.querySelector(".tab-btn.active");return b?b.dataset.tab:"";}
     function selectTab(name){const b=document.querySelector('.tab-btn[data-tab="'+name+'"]');if(b)b.click();}
     document.addEventListener("keydown",(e)=>{
-      // Alt+1/2/3 → switch tabs
+      // Alt+1/2 → switch tabs (Assistant disabled for now)
       if(e.altKey && !e.ctrlKey && !e.shiftKey){
-        if(e.key==="1"){e.preventDefault();selectTab("assistant");return;}
-        if(e.key==="2"){e.preventDefault();selectTab("smooth");return;}
-        if(e.key==="3"){e.preventDefault();selectTab("extract");return;}
+        if(e.key==="1"){e.preventDefault();selectTab("smooth");return;}
+        if(e.key==="2"){e.preventDefault();selectTab("extract");return;}
       }
       const tab=activeTab();
       // Ctrl+Enter → primary action of the active tab
@@ -392,11 +391,11 @@
     });
 
     // ---- Voice ON by default ----
-    // The mic permission prompt requires a user gesture, so we arm voice to
-    // start on the first interaction with the page (click/keypress). We also
-    // try on load in case permission was already granted (localhost/https).
-    function autoStartConvo(){ if(!recognition||convoMode)return; toggleConvo(); }
-    if(recognition){
+    // NOTE: Assistant tab is disabled for now, so voice auto-start is off.
+    // Flip ASSISTANT_ENABLED to true to re-enable the Assistant tab + voice.
+    const ASSISTANT_ENABLED = false;
+    function autoStartConvo(){ if(!ASSISTANT_ENABLED||!recognition||convoMode)return; toggleConvo(); }
+    if(ASSISTANT_ENABLED && recognition){
       window.addEventListener("load",()=>{ setTimeout(()=>{ if(micGranted) autoStartConvo(); },300); });
       const arm=()=>{ window.removeEventListener("pointerdown",arm); window.removeEventListener("keydown",arm); autoStartConvo(); };
       window.addEventListener("pointerdown",arm);

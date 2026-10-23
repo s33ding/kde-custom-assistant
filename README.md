@@ -1,13 +1,17 @@
-<h1 align="center">🦸 Sidekick</h1>
+<h1 align="center">Sidekick</h1>
 
 <p align="center">
-  <em>An embeddable AI assistant that opens as a chat <strong>widget</strong> in any web page.</em>
+  <em>AI web app (chat + text tools) powered by AWS Bedrock, with an embeddable chat widget.</em>
 </p>
 
 <p align="center">
   <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-339933?logo=node.js&logoColor=white">
   <img alt="docker" src="https://img.shields.io/badge/docker-always--on-2496ED?logo=docker&logoColor=white">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
+</p>
+
+<p align="center">
+  <img alt="Sidekick UI" src="docs/img/sidekick.png" width="680">
 </p>
 
 ---
