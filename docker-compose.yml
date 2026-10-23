@@ -1,0 +1,37 @@
+services:
+  assistant:
+    build: .
+    image: kde-custom-assistant:latest
+    container_name: kde-custom-assistant
+    # Always-on: restart on crash and on host/daemon reboot
+    restart: always
+    ports:
+      - "58829:58829"
+    # Live updates: edit files locally and the container picks them up.
+    # - server/ and public/ are bind-mounted from the host (:z = SELinux relabel, Fedora)
+    # - nodemon --legacy-watch uses POLLING, which (unlike node --watch/inotify)
+    #   reliably detects changes to bind-mounted files under Docker + SELinux
+    # - public/ (widget + demo) is static, so changes are served instantly on refresh
+    # node_modules is an anonymous volume so the host folder doesn't shadow image deps.
+    volumes:
+      - ./server:/app/server:z
+      - ./public:/app/public:z
+      - /app/node_modules
+    # Install nodemon into the node_modules volume (image omits dev deps), then
+    # run with polling-based watch.
+    command: ["sh", "-c", "npm install --no-save nodemon@3.1.9 && npx nodemon --legacy-watch --watch server --ext js,json server/index.js"]
+    environment:
+      PORT: 58829
+      # Polling interval for nodemon (ms)
+      CHOKIDAR_USEPOLLING: "true"
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      SYSTEM_PROMPT: ${SYSTEM_PROMPT:-You are a helpful assistant embedded in a web page.}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:58829/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
