@@ -169,5 +169,60 @@ def chat():
         return jsonify({"error": "Falha no chat.", "detail": str(e)}), 500
 
 
+# Grammar/spelling/style correction ("Grammarly"-style), en-US or pt-BR.
+LANG_LABELS = {"en-US": "American English (en-US)", "pt-BR": "Brazilian Portuguese (pt-BR)"}
+
+def correct_grammar(text, lang):
+    label = LANG_LABELS.get(lang, LANG_LABELS["en-US"])
+    system_prompt = (
+        f"You are a professional proofreader for {label}. "
+        "Correct grammar, spelling, punctuation, and clarity while preserving the "
+        "author's meaning and tone. Keep technical terms as-is. "
+        "Respond ONLY with a JSON object with two fields: "
+        '"corrected" (the corrected text, nothing else) and '
+        '"notes" (a very short bullet-style summary of what you changed, in the same language; '
+        "empty string if no changes). No markdown, no extra keys."
+    )
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 700,
+        "temperature": 0.1,
+        "system": system_prompt,
+        "messages": [
+            {"role": "user", "content": f"Text to correct:\n\n{text}"},
+            {"role": "assistant", "content": "{"}
+        ],
+    })
+    response = bedrock.invoke_model(
+        modelId=MODEL_ID, contentType="application/json", accept="application/json", body=body,
+    )
+    result = json.loads(response["body"].read())
+    raw = "{" + result["content"][0]["text"].strip()
+    # The model may wrap or append text; extract the JSON object defensively.
+    try:
+        start = raw.index("{"); end = raw.rindex("}") + 1
+        data = json.loads(raw[start:end])
+        return {"corrected": (data.get("corrected") or "").strip(), "notes": (data.get("notes") or "").strip()}
+    except Exception:
+        # Fallback: treat the whole response as the corrected text, no notes.
+        return {"corrected": raw.strip().lstrip("{").strip(), "notes": ""}
+
+
+@app.route('/grammar', methods=['POST'])
+def grammar():
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or '').strip()
+    lang = data.get('lang') or 'en-US'
+    if lang not in LANG_LABELS:
+        lang = 'en-US'
+    if not text:
+        return jsonify({"error": "O texto não pode estar vazio." if lang == "pt-BR" else "Text cannot be empty."}), 400
+    try:
+        out = correct_grammar(text, lang)
+        return jsonify(out)
+    except Exception as e:
+        return jsonify({"error": "Grammar correction failed.", "detail": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)

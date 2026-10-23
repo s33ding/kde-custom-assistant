@@ -92,6 +92,16 @@
     .dz-icon{font-size:26px;}
     #imgPreview{max-width:100%;max-height:100%;object-fit:contain;}
 
+    /* Grammar tab */
+    .grammar-bar{display:flex;justify-content:flex-end;margin-bottom:12px;}
+    .lang-sel{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--outline);}
+    .lang-sel select{background:var(--surface-container);color:var(--on-surface);border:1px solid var(--outline-variant);
+      border-radius:var(--r-sm);padding:5px 8px;font-family:inherit;font-size:.82rem;outline:none;cursor:pointer;}
+    .lang-sel select:focus{border-color:var(--outline);}
+    .notes{margin-top:12px;font-size:.78rem;color:var(--outline);line-height:1.5;white-space:pre-wrap;}
+    .notes:not(:empty){border-top:1px solid var(--outline-variant);padding-top:10px;}
+    .notes-title{color:var(--on-surface-variant);font-weight:500;margin-bottom:2px;}
+
     /* Buttons — minimalist */
     .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
     button.primary,button.copy{display:inline-flex;align-items:center;justify-content:center;gap:7px;
@@ -128,7 +138,8 @@
 
     <nav class="tabs">
       <button class="tab-btn" data-tab="assistant" style="display:none;">Assistant</button>
-      <button class="tab-btn active" data-tab="smooth">SmoothDialogue</button>
+      <button class="tab-btn active" data-tab="grammar">Grammar</button>
+      <button class="tab-btn" data-tab="smooth">SmoothDialogue</button>
       <button class="tab-btn" data-tab="extract">Txt Extract</button>
     </nav>
 
@@ -149,8 +160,39 @@
     </section>
     </section>
 
+    <!-- Tab: Grammar (proofreader — en-US default, pt-BR option) -->
+    <section class="tab-panel active" id="tab-grammar">
+      <div class="container">
+        <div class="grammar-bar">
+          <label class="lang-sel">Idioma
+            <select id="grammarLang">
+              <option value="en-US" selected>English (US)</option>
+              <option value="pt-BR">Português (BR)</option>
+            </select>
+          </label>
+        </div>
+        <div class="panels">
+          <div class="panel">
+            <div class="panel-header"><h2 id="grammarInLabel">Your text</h2></div>
+            <textarea id="grammarInput" placeholder="Type or paste text to proofread..."></textarea>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h2 id="grammarOutLabel">Corrected</h2></div>
+            <div id="grammarOutput" class="output-box"><span class="placeholder-text">The corrected text will appear here...</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" id="grammarSubmit">Correct</button>
+          <button class="copy" id="grammarCopy">Copy</button>
+        </div>
+        <div id="grammarLoading" class="loader"><div class="spinner"></div><span>Checking...</span></div>
+        <div id="grammarNotes" class="notes"></div>
+        <div class="hints"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> correct · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copy · <kbd>Alt</kbd>+<kbd>1/2/3</kbd> switch tab</div>
+      </div>
+    </section>
+
     <!-- Tab: SmoothDialogue (rewrite) -->
-    <section class="tab-panel active" id="tab-smooth">
+    <section class="tab-panel" id="tab-smooth">
       <div class="container">
         <div class="panels">
           <div class="panel">
@@ -233,6 +275,48 @@
     sIn.addEventListener("keydown",(e)=>{if(e.ctrlKey&&e.key==="Enter")improve();});
     sCopy.addEventListener("click",()=>copyFrom(sOut,sCopy));
 
+    // Grammar — proofreader (en-US default / pt-BR)
+    const gLang=document.getElementById("grammarLang"),gIn=document.getElementById("grammarInput"),
+      gOut=document.getElementById("grammarOutput"),gLoad=document.getElementById("grammarLoading"),
+      gBtn=document.getElementById("grammarSubmit"),gCopy=document.getElementById("grammarCopy"),
+      gNotes=document.getElementById("grammarNotes"),
+      gInLabel=document.getElementById("grammarInLabel"),gOutLabel=document.getElementById("grammarOutLabel");
+    const G_STRINGS={
+      "en-US":{inLabel:"Your text",outLabel:"Corrected",submit:"Correct",copy:"Copy",checking:"Checking...",
+        placeholderIn:"Type or paste text to proofread...",placeholderOut:"The corrected text will appear here...",
+        empty:"Text cannot be empty.",err:"Something went wrong. Try again.",notesTitle:"Changes"},
+      "pt-BR":{inLabel:"Seu texto",outLabel:"Corrigido",submit:"Corrigir",copy:"Copiar",checking:"Verificando...",
+        placeholderIn:"Digite ou cole o texto para revisar...",placeholderOut:"O texto corrigido aparecerá aqui...",
+        empty:"O texto não pode estar vazio.",err:"Algo deu errado. Tente novamente.",notesTitle:"Alterações"}};
+    function applyGrammarLang(){
+      const s=G_STRINGS[gLang.value]||G_STRINGS["en-US"];
+      gInLabel.textContent=s.inLabel;gOutLabel.textContent=s.outLabel;gBtn.textContent=s.submit;
+      gCopy.textContent=s.copy;gIn.placeholder=s.placeholderIn;
+      if(gOut.querySelector(".placeholder-text"))gOut.innerHTML='<span class="placeholder-text">'+s.placeholderOut+'</span>';
+    }
+    gLang.addEventListener("change",applyGrammarLang);
+    applyGrammarLang();
+
+    async function runGrammar(){
+      const s=G_STRINGS[gLang.value]||G_STRINGS["en-US"];
+      const text=gIn.value.trim();
+      if(!text){gOut.innerHTML='<span class="error">'+s.empty+'</span>';return;}
+      gOut.innerHTML="";gNotes.innerHTML="";gLoad.querySelector("span").textContent=s.checking;
+      gLoad.classList.add("visible");gBtn.disabled=true;gCopy.classList.remove("visible");
+      try{
+        const r=await fetch("/api/grammar",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({text,lang:gLang.value})});
+        const d=await r.json();gLoad.classList.remove("visible");gBtn.disabled=false;
+        if(d.corrected){
+          gOut.innerHTML=fmt(d.corrected);gCopy.classList.add("visible");
+          if(d.notes&&d.notes.trim()){gNotes.innerHTML='<div class="notes-title">'+s.notesTitle+'</div>'+fmt(d.notes);}
+        } else { gOut.innerHTML='<span class="error">'+(d.error||s.err)+'</span>'; }
+      }catch(_){gLoad.classList.remove("visible");gBtn.disabled=false;gOut.innerHTML='<span class="error">'+s.err+'</span>';}
+    }
+    gBtn.addEventListener("click",runGrammar);
+    gIn.addEventListener("keydown",(e)=>{if(e.ctrlKey&&e.key==="Enter")runGrammar();});
+    gCopy.addEventListener("click",()=>copyFrom(gOut,gCopy));
+
     // Txt Extract — img to text
     const dz=document.getElementById("dropzone"),imgInput=document.getElementById("imgInput"),
       imgPreview=document.getElementById("imgPreview"),dzEmpty=dz.querySelector(".dz-empty"),
@@ -291,20 +375,23 @@
     function activeTab(){const b=document.querySelector(".tab-btn.active");return b?b.dataset.tab:"";}
     function selectTab(name){const b=document.querySelector('.tab-btn[data-tab="'+name+'"]');if(b)b.click();}
     document.addEventListener("keydown",(e)=>{
-      // Alt+1/2 → switch tabs (Assistant disabled for now)
+      // Alt+1/2/3 → switch tabs (Assistant disabled for now)
       if(e.altKey && !e.ctrlKey && !e.shiftKey){
-        if(e.key==="1"){e.preventDefault();selectTab("smooth");return;}
-        if(e.key==="2"){e.preventDefault();selectTab("extract");return;}
+        if(e.key==="1"){e.preventDefault();selectTab("grammar");return;}
+        if(e.key==="2"){e.preventDefault();selectTab("smooth");return;}
+        if(e.key==="3"){e.preventDefault();selectTab("extract");return;}
       }
       const tab=activeTab();
       // Ctrl+Enter → primary action of the active tab
       if(e.ctrlKey && !e.shiftKey && e.key==="Enter"){
-        if(tab==="smooth"){e.preventDefault();improve();}
+        if(tab==="grammar"){e.preventDefault();runGrammar();}
+        else if(tab==="smooth"){e.preventDefault();improve();}
         else if(tab==="extract"){e.preventDefault();runOcr();}
       }
       // Ctrl+Shift+C → copy the active tab's result
       if(e.ctrlKey && e.shiftKey && (e.key==="C"||e.key==="c")){
-        if(tab==="smooth" && sCopy.classList.contains("visible")){e.preventDefault();copyFrom(sOut,sCopy);}
+        if(tab==="grammar" && gCopy.classList.contains("visible")){e.preventDefault();copyFrom(gOut,gCopy);}
+        else if(tab==="smooth" && sCopy.classList.contains("visible")){e.preventDefault();copyFrom(sOut,sCopy);}
         else if(tab==="extract" && oCopy.classList.contains("visible")){e.preventDefault();copyFrom(oOut,oCopy);}
       }
     });

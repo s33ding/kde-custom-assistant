@@ -11,7 +11,8 @@ Tabs (served at `/`):
 
 | Tab             | What it does                                   | Backend route        | AI |
 |-----------------|------------------------------------------------|----------------------|----|
-| **Assistant**   | In-tab chat + **voice conversation mode**      | `POST /api/chat`     | Bedrock (Claude) |
+| **Grammar**     | Proofreader (en-US default / pt-BR) — fix grammar/spelling/style | `POST /api/grammar`  | Bedrock (Claude) |
+| **Assistant** _(disabled)_ | In-tab chat + voice conversation mode | `POST /api/chat`     | Bedrock (Claude) |
 | **SmoothDialogue** | Rewrite informal PT text → professional     | `POST /api/improve`  | Bedrock (Claude) |
 | **Txt Extract** | OCR: image → text (auto-loads latest screenshot)| `POST /api/img-to-text` | Bedrock (Claude vision) |
 

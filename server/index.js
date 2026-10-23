@@ -154,6 +154,43 @@ app.post("/api/improve", async (req, res) => {
 });
 
 /**
+ * Grammar/spelling/style correction (en-US or pt-BR). Forwards to the
+ * SmoothDialogue (Flask) /grammar endpoint; mock fallback otherwise.
+ */
+async function grammarCorrect(text, lang) {
+  if (SMOOTH_API_URL) {
+    const base = SMOOTH_API_URL.replace(/\/+$/, "");
+    const r = await fetch(`${base}/grammar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!r.ok) throw new Error(`SmoothDialogue grammar error ${r.status}`);
+    const data = await r.json();
+    if (data.error) throw new Error(data.detail || data.error);
+    return { corrected: data.corrected ?? "", notes: data.notes ?? "" };
+  }
+  // mock fallback: trim + capitalize, no notes
+  const t = text.trim().replace(/\s+/g, " ");
+  return { corrected: t.charAt(0).toUpperCase() + t.slice(1), notes: "" };
+}
+
+app.post("/api/grammar", async (req, res) => {
+  try {
+    const text = (req.body?.text || "").toString();
+    const lang = (req.body?.lang || "en-US").toString();
+    if (!text.trim()) {
+      return res.status(400).json({ error: "Text cannot be empty." });
+    }
+    const out = await grammarCorrect(text, lang);
+    res.json(out);
+  } catch (err) {
+    console.error("[grammar] error:", err.message);
+    res.status(500).json({ error: "grammar_failed", detail: err.message });
+  }
+});
+
+/**
  * Extract text from an image (OCR). Expects a data URL (base64) in `image`.
  * Prefers the SmoothDialogue (Bedrock) /ocr endpoint when SMOOTH_API_URL is
  * set; falls back to an OpenAI vision model, then a mock.
